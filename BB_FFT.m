@@ -24,7 +24,7 @@ function FFT = BB_FFT(T,X)
     figure(3), clf
     f = Fs/N*(0:N-1);
     plot(f,abs(FFT) / N,"LineWidth",1) 
-    title("Single-Sided Amplitude Spectrum of X(t)")
+    title("A Frequency Spectrum of x(t)")
     xlabel("f (Hz)")
     ylabel("|X(f)| (relative)")
 end
