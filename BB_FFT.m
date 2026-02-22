@@ -10,7 +10,7 @@ function FFT = BB_FFT(T,X)
     N = numel(X);         % size of discrete signal dataset
     t = (0:N-1)*T;        % Time vector
     
-    %plotting the corruption
+    %plotting the signal
     figure(2), clf
     plot(1000*t,X,"LineWidth",1)
     title("Signal In Question")
@@ -28,3 +28,4 @@ function FFT = BB_FFT(T,X)
     xlabel("f (Hz)")
     ylabel("|X(f)| (relative)")
 end
+
