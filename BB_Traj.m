@@ -13,7 +13,7 @@
 %  
 %  note that the timestep between each point of the trajectory is 0.1ms
 
-function X = BB_Traj(v,theta_0,alpha,A,T,N,plot)
+function X = BB_Traj(v,theta_0,alpha,A,T,N,graph)
     persistent ball_vel 
     persistent phase
     persistent ball_pos
@@ -60,7 +60,7 @@ function X = BB_Traj(v,theta_0,alpha,A,T,N,plot)
             phase = phase + omega * dt;
         end
     end
-    if plot
+    if graph
         figure(1), clf
         hold on
         plot(times,X)
@@ -69,4 +69,5 @@ function X = BB_Traj(v,theta_0,alpha,A,T,N,plot)
         xlabel("t (s)")
         ylabel("height (m)")
     end
+
 end
