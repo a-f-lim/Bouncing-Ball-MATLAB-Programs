@@ -9,9 +9,14 @@
 %  A (mm) = amplitude of motion of table
 %  T (ms) = period of the table
 %  N = number of points we want to have
+%  plot = a boolean for if we want the x vs t graph (true) or not (false)
+%  
 %  note that the timestep between each point of the trajectory is 0.1ms
 
-function X = BB_Traj(v,theta_0,alpha,A,T,N)
+function X = BB_Traj(v,theta_0,alpha,A,T,N,plot)
+    persistent ball_vel 
+    persistent phase
+    persistent ball_pos
     %rescale some stuff
     A = A / 1000;
     T = T / 1000;
@@ -22,11 +27,17 @@ function X = BB_Traj(v,theta_0,alpha,A,T,N)
     
     %some things to make the sine and cosine stuff cleaner
     omega = 2 * pi / T;
-    phase = theta_0;
-
+    
     %initializing the ball's path
-    ball_pos = A * sin(phase);
-    ball_vel = v;
+    if v ~= 's'
+        ball_vel = v;
+    end
+    if theta_0 ~= 's'
+        phase = theta_0;
+        ball_pos = A * sin(phase);
+    end
+    times = 0:dt:(N-1)*dt;
+    table_X = A * sin(omega * times + phase);
     impact = @(v_T,v_B) (1+alpha) * v_T - alpha * v_B;
     
     %iterating the thing to get all the points now:
@@ -49,13 +60,13 @@ function X = BB_Traj(v,theta_0,alpha,A,T,N)
             phase = phase + omega * dt;
         end
     end
-    times = 0:dt:(N-1)*dt;
-    table_X = A * sin(omega * times + theta_0);
-    figure(1), clf
-    hold on
-    plot(times,X)
-    plot(times, table_X)
-    title(['Bouncing Ball Model: v_0=', num2str(v),' m/s, \theta_0=',num2str(theta_0)])
-    xlabel("t (s)")
-    ylabel("height (m)")
+    if plot
+        figure(1), clf
+        hold on
+        plot(times,X)
+        plot(times, table_X)
+        title(['Bouncing Ball Model: v_0=', num2str(v),' m/s, \theta_0=',num2str(theta_0)])
+        xlabel("t (s)")
+        ylabel("height (m)")
+    end
 end
