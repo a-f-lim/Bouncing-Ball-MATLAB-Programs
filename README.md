@@ -1,11 +1,11 @@
-BB_Traj(v,theta_0,alpha,A,T,N,plot): takes in an 
+BB_Traj(v,theta_0,alpha,A,T,N,graph): takes in an 
     initial velocity (v)
     table phase shift (theta_0)
     coefficient of restitution (alpha)
     amplitude of oscillation in mm (A)
     period of oscillation in ms (T)
     number of discrete data points (N)
-and calculates the trajectory of the ball at t=0,dt,...,(N-1)dt. If a plot is desired, then plot = true. 
+and calculates the trajectory of the ball at t=0,dt,...,(N-1)dt. If a plot is desired, then graph = true. 
 
 BB_FFT(T,X): takes in the 
     length of time between consecutive points (T)
