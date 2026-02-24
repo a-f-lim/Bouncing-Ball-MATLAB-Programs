@@ -7,10 +7,11 @@
 %       e: coefficient of restitution
 %       T: period of motion for table
 
-function BB_bifurcation_phase(v,theta_0,A_i,A_f,e,T)
-    A_i = A_i / 1000; A_f = A_f / 1000;
+function BB_bifurcation_phase(v,theta_0,e,Amps,T)
     T = T / 1000;
-    dt = 0.00005;
+    A_i = Amps(1) / 1000;
+    A_f = Amps(end) / 1000;
+    dt = 0.000025;
     verticals = [];
     horizontals = [];
 
@@ -22,12 +23,12 @@ function BB_bifurcation_phase(v,theta_0,A_i,A_f,e,T)
     ball_pos = A_i * sin(phase);
     ball_vel = v;
     impact = @(v_T,v_B) (1+e) * v_T - e * v_B;
-    Amps = A_i:0.00000025:A_f;
+    %Amps = A_i:0.00025:A_f;
 
     %iterating the thing over amplitudes:
-    for A = Amps
+    for A = flip(Amps) / 1000
         %iterating the thing to get all the points now:
-        for k = 1:100000
+        for k = 1:50000
             ball_pos = ball_pos + ball_vel * dt;
             %moving the table
             table_pos = A * sin(phase);
@@ -39,7 +40,7 @@ function BB_bifurcation_phase(v,theta_0,A_i,A_f,e,T)
             elseif ball_pos < table_pos %only possibility of an impact
                 ball_pos = table_pos;
                 ball_vel = impact(A * omega * cos(phase), ball_vel);
-                if k > 20000
+                if k > 10000
                     horizontals = [horizontals, A];
                     verticals = [verticals, mod(phase + pi,2 * pi) - pi];
                 end
@@ -51,7 +52,7 @@ function BB_bifurcation_phase(v,theta_0,A_i,A_f,e,T)
     end
     figure(4), clf
     scatter(horizontals, verticals, 2, "black", "filled")
-    grid on; axis([A_i,A_f,-pi - 0.01, pi + 0.01])
+    grid on; axis([A_i, A_f, -pi-eps, pi+eps]);
     title('Bouncing Ball Bifurcation Diagram')
     xlabel("Amplitude (m)")
     ylabel("Impact Phase")

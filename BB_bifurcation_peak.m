@@ -7,12 +7,12 @@
 %       e: coefficient of restitution
 %       T: period of motion for table
 
-function BB_bifurcation_peak(v,theta_0,A_i,A_f,e,T)
+function BB_bifurcation_peak(v,theta_0,e,Amps,T)
     verticals = [];
     horizontals = [];
-    TRAJECTORY = BB_Traj(v,theta_0,e,A_i,T,50000,false);
+    TRAJECTORY = BB_Traj(v,theta_0,e,Amps(1),T,50000,false);
     %iterating the thing over amplitudes:
-    for A = A_i:0.00025:A_f
+    for A = flip(Amps)
         TRAJECTORY = BB_Traj('s','s',e,A,T,50000,false);
         PEAKS = BB_Peak_Anal(TRAJECTORY(10001:end),A);
         horizontals = [horizontals, A * ones(size(PEAKS))];
@@ -20,7 +20,7 @@ function BB_bifurcation_peak(v,theta_0,A_i,A_f,e,T)
     end
     figure(4), clf
     scatter(horizontals, verticals, 3, "black", "filled")
-    grid on, axis([A_i A_f 0 Inf])
+    grid on, 
     title('Bouncing Ball Bifurcation Diagram')
     xlabel("Amplitude (m)")
     ylabel("Locally Maximum Height")

@@ -23,7 +23,8 @@ function FFT = BB_FFT(T,X)
     %plotting the output of the FFT
     figure(3), clf
     f = Fs/N*(0:N-1);
-    plot(f,abs(FFT) / N,"LineWidth",1) 
+    disp(f)
+    plot(f,abs(FFT),"LineWidth",1) 
     title("A Frequency Spectrum of x(t)")
     xlabel("f (Hz)")
     ylabel("|X(f)| (relative)")

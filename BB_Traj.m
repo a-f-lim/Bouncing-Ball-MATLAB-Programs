@@ -69,5 +69,4 @@ function X = BB_Traj(v,theta_0,alpha,A,T,N,graph)
         xlabel("t (s)")
         ylabel("height (m)")
     end
-
 end
