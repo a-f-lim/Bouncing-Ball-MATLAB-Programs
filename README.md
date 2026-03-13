@@ -19,10 +19,10 @@ BB_Peak_Anal(TRAJ,A): Under the assumption that the ball does not undergo a stic
     amplitude of table oscillation in mm (A)
 and computes the heights of the ball's path in between impacts
 
-BB_bifurcation_(peak/phase)(v,theta_0,A_i,A_f,e,T): takes in the
+BB_bifurcation_(peak/phase)(v,theta_0,Amps,e,T): takes in the
     initial velocity (v)
     table phase shift (theta_0)
-    starting and ending amplitudes of oscillation in mm (A_i and A_f)
+    the list of amplitudes of oscillation in mm (Amps)
     coefficient of restitution (e)
     period of oscillation in ms (T)
-and plots the peaks/impact phases of the ball's trajectory as the amplitude varies from A_i to A_f in intervals of 0.0025 mm.
+and plots the peaks/impact phases of the ball's trajectory as the amplitude varies across the list.
