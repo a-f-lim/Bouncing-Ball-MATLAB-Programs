@@ -1,63 +1,162 @@
-% Hello there. This is a script that combines both the impactCalculator and
-% stickySol scripts to generate the trajectory of a bouncing ball system
-% over some period of time. If (from the table's POV) the ball travels
-% upward, then we use impactCalculator. Otherwise (travels downward), we 
-% use the stickySol script. The inputs are as follows:
-% 
-%       v (m/s): an initial velocity
-%       theta_0: an initial phase for where the table starts
-%       A (mm): an amplitude of oscillation for the table
-%       e: a coefficient of restitution between the ball and table
-%       T (ms): the period of oscillation for the table 
-%       secs (s): how many seconds of the system the code simulates
-% 
-% The calculator will run for [secs] seconds of ball, providing a graph of 
-% height vs. time for both the ball and the table.
+% GET TRAJECTORY
+% Combines impactCalculator and stickySolCalc to generate the full trajectory
+% of a bouncing ball on a sinusoidally oscillating table.
+%
+% Physics Model:
+%   - BOUNCING PHASE: Ball is in free fall, with impacts governed by 
+%     coefficient of restitution e
+%   - STICKY PHASE: Ball moves with the table, constrained by surface normal
+%   - TRANSITION: Ball enters sticky when v_ball <= v_table
+%                 Ball exits sticky when table acceleration exceeds gravity
+%
+% Inputs:
+%   v         (m/s):  initial velocity of ball (upward positive)
+%   theta_0   (rad):  initial phase angle of table oscillation
+%   A         (mm):   amplitude of table oscillation
+%   e         (--):   coefficient of restitution (0 < e <= 1)
+%   T         (ms):   period of table oscillation
+%   secs      (s):    simulation duration
+%   graph     (bool): whether to generate a graph or not of the trajectory
+%
+% Outputs:
+%   theta     (rad):  phase angle at end of simulation
+%   v         (m/s):  velocity at end of simulation
+%
 
-function [theta,v] = getTraj(v,theta,A,e,T,secs)
-    %reinitialize variables to get things in meters and seconds
-    T = T / 1000; A = A / 1000;
-    omega = 2 * pi / T;
-    dt = T / 250; t = 0; Tau = 0;
-
-    %once the ball becomes unstuck, it must hit a parabolic arc
-    %this variable will denote past states of "sticky" or "bouncy"
-    bounce_stuck = 1;
+function [theta_final, v_final] = getTraj(v, theta_0, A, e, T, secs, graph)
+    % Convert to consistent units (meters, seconds)
+    T_sec = T / 1000;
+    A_m = A / 1000;
     
-    %plot the table motion
-    figure(1), clf, hold on
-    t_table = 0:dt:secs;
-    pos_table = A * sin(omega .* t_table + theta);
-    plot(t_table,pos_table,'r',LineWidth=1)
-    title("Bouncing Ball Height vs. Time Graph")
-    xlabel("Time"); ylabel("Height")
-    grid on
-
-    % the important part: ball motion
-    while t < secs
-        table_vel = A * omega * cos(theta);
-
-        if v <= table_vel && bounce_stuck  %if sticky now AND was "bounce" before
-            tau = stickySol(theta,1000*A,1000*T);
-            pos_ball = @(times) A * sin(omega .* (times - t) + theta);
-            v = A * omega * cos(omega * tau + theta);
-            bounce_stuck = 0; %indicates that the previous state was "sticky"
-        else %if not sticky OR was previously sticky
-            tau = impactCalculator(v,theta,1000*A,1000*T);
-            pos_ball = @(times) A * sin(theta) + v .* (times - t) - (9.81 / 2) .* (times - t) .^ 2;
-            v = (1 + e) * A * omega * cos(omega * tau + theta) - e * (v - 9.81 * tau);
-            bounce_stuck = 1; %indicates that the previous state was bouncy
-        end
-        Tau = min(secs - t,tau);
-        N = max(floor(Tau/dt)+1,11);
-        t_ball = linspace(t,t+Tau,N);
-        plot(t_ball,pos_ball(t_ball),'b',LineWidth=1)    
+    % Parameters
+    omega = 2 * pi / T_sec;
+    g = 9.81;
+    dt_plot = T_sec / 100;  % Time resolution for plotting
+    
+    % Initialize time and phase tracking
+    t_elapsed = 0;           % Elapsed time in simulation
+    theta = theta_0;         % Current phase angle
+    
+    % Storage for plotting
+    t_plot = [];
+    y_ball_plot = [];
+    y_table_plot = [];
+    
+    % Initial state
+    canBeSticky = true;  % Currently in sticky phase?
+    
+    % ========== MAIN SIMULATION LOOP ==========
+    while t_elapsed < secs
+        % Current table position and velocity
+        y_table = A_m * sin(theta);
+        v_table = A_m * omega * cos(theta);
         
-        %shift the new starting points forward by tau
-        t = t + Tau;
-        theta = omega * Tau + theta;
-        theta = mod(theta + pi,2 * pi) - pi;
+        % Current ball position (at start of this phase)
+        y_ball = y_table;
+        
+        % Determine phase (sticky or bouncing)
+        if v <= v_table && canBeSticky
+            % ===== ENTER STICKY PHASE =====
+            
+            % How long will the ball remain stuck?
+            t_unstick = stickySolCalc(A, T, theta);
+            
+            % Actual duration (capped by remaining simulation time)
+            t_phase = min(t_unstick, secs - t_elapsed);
+            
+            % Simulate sticky phase: ball moves with table
+            N = max(15, ceil(t_phase / dt_plot));
+            t_substeps = linspace(0, t_phase, N);
+            t_current_vec = t_elapsed + t_substeps;
+            theta_current_vec = theta_0 + omega * t_current_vec;
+            y_current_vec = A_m * sin(theta_current_vec);
+            
+            % Store for plotting
+            t_plot = [t_plot, t_current_vec];
+            y_table_plot = [y_table_plot, y_current_vec];
+            y_ball_plot = [y_ball_plot, y_current_vec];
+            
+            % Update state at end of sticky phase
+            theta = theta_0 + omega * (t_elapsed + t_phase);
+            if t_phase == t_unstick
+                % Ball unsticks: velocity equals table velocity at unstick moment
+                v = A_m * omega * cos(theta);
+                canBeSticky = false;
+            else
+                % Simulation ended while sticky
+                v = A_m * omega * cos(theta);
+                t_elapsed = secs;
+                break;
+            end
+            
+            t_elapsed = t_elapsed + t_phase;
+            
+        else
+            % ===== ENTER BOUNCING PHASE =====
+            
+            % Time to next impact
+            t_impact = impactCalculator(v, theta, A, T);
+            
+            % Actual duration (capped by remaining simulation time)
+            t_phase = min(t_impact, secs - t_elapsed);
+            
+            % Simulate bouncing phase: free fall
+            N = max(15, ceil(t_phase / dt_plot));
+            t_substeps = linspace(0, t_phase, N);
+            t_current_vec = t_elapsed + t_substeps;
+            
+            % Ball trajectory during free fall
+            y_ball_vec = y_ball + v * t_substeps - (g / 2) * t_substeps.^2;
+            
+            % Table trajectory (phase advances with time)
+            theta_current_vec = theta + omega * t_substeps;
+            y_table_vec = A_m * sin(theta_current_vec);
+            
+            % Store for plotting
+            t_plot = [t_plot, t_current_vec];
+            y_ball_plot = [y_ball_plot, y_ball_vec];
+            y_table_plot = [y_table_plot, y_table_vec];
+            
+            % Update state at end of bouncing phase
+            theta = theta + omega * t_phase;
+            
+            if t_phase == t_impact && (t_elapsed + t_phase) < secs
+                % Impact occurred: apply restitution
+                v_ball_before = v - g * t_impact;
+                v_table_impact = A_m * omega * cos(theta);
+                
+                % Restitution equation: v_ball_after = (1+e)*v_table - e*v_ball_before
+                v = (1 + e) * v_table_impact - e * v_ball_before;
+            else
+                % Simulation ended during flight
+                v = v - g * t_phase;
+                t_elapsed = secs;
+                break;
+            end
+            
+            canBeSticky = true;
+            t_elapsed = t_elapsed + t_phase;
+        end
     end
-    theta = theta - omega * (Tau - tau);
-    theta = mod(theta + pi,2 * pi) - pi;
+    
+    % ========== PLOTTING ==========
+    if graph
+        figure(1);
+        clf;
+        hold on;
+        
+        plot(t_plot, y_table_plot, 'r-', 'LineWidth', 1.5, 'DisplayName', 'Table');
+        plot(t_plot, y_ball_plot, 'b-', 'LineWidth', 1.5, 'DisplayName', 'Ball');
+        
+        xlabel('Time (s)', 'FontSize', 12);
+        ylabel('Height (m)', 'FontSize', 12);
+        title('Bouncing Ball on Oscillating Table', 'FontSize', 14);
+        grid on;
+        legend('FontSize', 11);
+        hold off;
+    end
+
+    % Final outputs
+    theta_final = theta;
+    v_final = v;
 end
